@@ -1,7 +1,11 @@
 """
 Edit this file to change the bot's content.
-No coding knowledge needed — just change the text between the quotes.
+
+For sensitive/environment-specific values (admin IDs, bot token), the bot reads
+from environment variables — set those in Railway's Variables tab.
 """
+
+import os
 
 # ---------- Welcome message ----------
 # Shown to users when they press /start.
@@ -32,8 +36,6 @@ WELCOME_IMAGE = "images/welcome.jpg"
 # To add a new button, copy a line and change the text + URL.
 # To remove one, delete or comment out (#) its line.
 # Buttons appear in the order listed here.
-#
-# The FIRST button is always the "main" one — by convention the channel link.
 BUTTONS = [
     {"text": "📢 Join channel for more",   "url": "https://t.me/yourchannel"},
     {"text": "🎯 Item One",                "url": "https://example.com/one"},
@@ -46,16 +48,25 @@ BUTTONS = [
 # How many buttons per row in the keyboard. 1 = one per row (recommended).
 BUTTONS_PER_ROW = 1
 
-# ---------- Admin settings ----------
-# Telegram user IDs allowed to use /broadcast.
-# To find your ID: message @userinfobot on Telegram and it will tell you.
-ADMIN_IDS = [
-    123456789,   # replace with your real Telegram user ID
-    # 987654321, # you can add a second admin like this
-]
+# ---------- Admin IDs (from environment variable) ----------
+# In Railway: set a variable named ADMIN_IDS with comma-separated IDs:
+#   ADMIN_IDS=123456789,987654321
+# Locally: add the same line to your .env file.
+# Find your ID by messaging @userinfobot on Telegram.
+def _parse_admin_ids() -> list[int]:
+    raw = os.getenv("ADMIN_IDS", "").strip()
+    if not raw:
+        return []
+    out = []
+    for part in raw.split(","):
+        part = part.strip()
+        if part.isdigit():
+            out.append(int(part))
+    return out
+
+ADMIN_IDS = _parse_admin_ids()
 
 # ---------- Broadcast settings ----------
 # Delay between sends during a broadcast, in seconds.
-# Telegram limits bots to ~30 messages/sec, but keeping it slower is safer.
-BROADCAST_DELAY_MIN = 0.05
-BROADCAST_DELAY_MAX = 0.15
+BROADCAST_DELAY_MIN = float(os.getenv("BROADCAST_DELAY_MIN", "0.05"))
+BROADCAST_DELAY_MAX = float(os.getenv("BROADCAST_DELAY_MAX", "0.15"))
