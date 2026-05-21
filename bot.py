@@ -1,9 +1,11 @@
 """
-Telegram Bot
-------------
-- /start: greets user, shows welcome text + photo + inline buttons
-- /broadcast: admin-only, sends a message to everyone who ever used /start
+Telegram Bot with Supabase
+--------------------------
+- /start: greets user, shows welcome text + photo + inline buttons,
+          stores/updates user info in Supabase
+- /broadcast: admin-only, sends a message to every active user
 - /users: admin-only, shows total user count
+- /stats: admin-only, shows detailed statistics
 - /help: shows available commands
 
 Run locally:  python bot.py
@@ -14,7 +16,6 @@ import asyncio
 import logging
 import os
 import random
-import sqlite3
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -30,6 +31,7 @@ from telegram.ext import (
 )
 
 import config
+import db
 
 # ---------- Setup ----------
 load_dotenv()
@@ -38,7 +40,7 @@ if not BOT_TOKEN:
     raise SystemExit("ERROR: BOT_TOKEN not set. Add it to .env (local) or Railway variables.")
 
 if not config.ADMIN_IDS:
-    print("WARNING: No ADMIN_IDS set. /broadcast and /users will be unusable.")
+    print("WARNING: No ADMIN_IDS set. /broadcast, /users, /stats will be unusable.")
     print("Set ADMIN_IDS=123456789 in .env (local) or Railway variables.")
 
 logging.basicConfig(
@@ -48,44 +50,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent
-DB_PATH = BASE_DIR / "users.db"
-
-
-# ---------- Database (stores users so admin can broadcast) ----------
-def db_init():
-    with sqlite3.connect(DB_PATH) as con:
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id   INTEGER PRIMARY KEY,
-                username  TEXT,
-                first_name TEXT,
-                joined_at  TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-
-def db_add_user(user_id: int, username: str | None, first_name: str | None):
-    with sqlite3.connect(DB_PATH) as con:
-        con.execute(
-            "INSERT OR IGNORE INTO users (user_id, username, first_name) VALUES (?, ?, ?)",
-            (user_id, username or "", first_name or ""),
-        )
-
-
-def db_remove_user(user_id: int):
-    """Called when a user blocks the bot — keeps the DB clean."""
-    with sqlite3.connect(DB_PATH) as con:
-        con.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
-
-
-def db_all_user_ids() -> list[int]:
-    with sqlite3.connect(DB_PATH) as con:
-        return [r[0] for r in con.execute("SELECT user_id FROM users")]
-
-
-def db_user_count() -> int:
-    with sqlite3.connect(DB_PATH) as con:
-        return con.execute("SELECT COUNT(*) FROM users").fetchone()[0]
 
 
 # ---------- Helpers ----------
@@ -111,12 +75,24 @@ def is_admin(user_id: int) -> bool:
 # ---------- Handlers ----------
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    db_add_user(user.id, user.username, user.first_name)
-    log.info("User %s (%s) started the bot", user.id, user.username)
+
+    # Store/update the user in Supabase
+    try:
+        db.upsert_user(
+            telegram_id=user.id,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            language_code=user.language_code,
+            is_premium=bool(user.is_premium),
+        )
+        log.info("User %s (%s) started — stored in Supabase", user.id, user.username)
+    except Exception as e:
+        log.error("Supabase upsert failed for user %s: %s", user.id, e)
+        # Don't block the user experience if DB fails
 
     text = build_welcome_text()
     keyboard = build_keyboard()
-
     image_path = BASE_DIR / config.WELCOME_IMAGE if config.WELCOME_IMAGE else None
 
     if image_path and image_path.exists():
@@ -148,6 +124,7 @@ async def help_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "",
             "<b>Admin commands:</b>",
             "/users — show how many users are registered",
+            "/stats — detailed statistics",
             "/broadcast &lt;message&gt; — send a message to every user",
             "  ↳ Reply to a photo with /broadcast caption to broadcast a photo",
         ]
@@ -157,8 +134,46 @@ async def help_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def users_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
-    count = db_user_count()
-    await update.message.reply_text(f"📊 Total users: <b>{count}</b>", parse_mode=ParseMode.HTML)
+    try:
+        ids = db.get_all_active_user_ids()
+        await update.message.reply_text(
+            f"📊 Active users: <b>{len(ids)}</b>", parse_mode=ParseMode.HTML
+        )
+    except Exception as e:
+        await update.message.reply_text(f"Error reading from Supabase: {e}")
+
+
+async def stats_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+    try:
+        s = db.get_stats()
+    except Exception as e:
+        await update.message.reply_text(f"Error reading stats: {e}")
+        return
+
+    lines = [
+        "📊 <b>Bot Stats</b>",
+        "",
+        f"👥 Total users: <b>{s['total']}</b>",
+        f"   ├ Active: {s['active']}",
+        f"   └ Blocked bot: {s['blocked']}",
+        "",
+        "📈 New users:",
+        f"   ├ Today: {s['new_today']}",
+        f"   ├ This week: {s['new_week']}",
+        f"   └ This month: {s['new_month']}",
+        "",
+        f"⭐ Premium users: {s['premium']} ({s['premium_pct']}%)",
+    ]
+
+    if s["top_langs"]:
+        lines.append("")
+        lines.append("🌍 Top languages:")
+        for i, (code, count) in enumerate(s["top_langs"], start=1):
+            lines.append(f"   {i}. {code} — {count}")
+
+    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
 
 
 async def broadcast_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -166,7 +181,7 @@ async def broadcast_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    # If replying to a photo, broadcast that photo with the command's args as caption
+    # Check if replying to a photo
     photo_file_id = None
     if update.message.reply_to_message and update.message.reply_to_message.photo:
         photo_file_id = update.message.reply_to_message.photo[-1].file_id
@@ -183,7 +198,12 @@ async def broadcast_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-    user_ids = db_all_user_ids()
+    try:
+        user_ids = db.get_all_active_user_ids()
+    except Exception as e:
+        await update.message.reply_text(f"Error reading user list: {e}")
+        return
+
     total = len(user_ids)
     status = await update.message.reply_text(f"📣 Broadcasting to {total} users…")
 
@@ -203,8 +223,11 @@ async def broadcast_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 )
             sent += 1
         except Forbidden:
-            # User blocked the bot — remove them so we don't try again
-            db_remove_user(uid)
+            # User blocked the bot — flag them
+            try:
+                db.mark_user_blocked(uid)
+            except Exception:
+                pass
             blocked += 1
         except BadRequest as e:
             failed += 1
@@ -238,20 +261,22 @@ async def broadcast_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def unknown(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    # For any non-command message, just re-show the welcome
+    # For any non-command message, re-show the welcome
     await start(update, ctx)
 
 
 # ---------- Main ----------
 def main():
-    db_init()
-    log.info("Database ready at %s", DB_PATH)
+    # Verify Supabase tables exist (raises if not)
+    db.ensure_schema()
+    log.info("Supabase: schema verified")
 
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("users", users_command))
+    app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("broadcast", broadcast_command))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, unknown))
 
