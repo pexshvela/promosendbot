@@ -13,6 +13,7 @@ import os
 WELCOME_TEXT = """<b>Welcome! 👋</b>
 
 You've just landed in the right place. We bring you the biggest welcome bonuses, exclusive offers, and trusted bookies — all in one spot. No fluff, no chasing, just the good deals.
+
 📢 For daily offers & VIP drops, join our channel 👇
 
 <b>Featured items:</b>
