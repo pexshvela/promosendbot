@@ -16,7 +16,7 @@ You've just landed in the right place. We bring you the biggest welcome bonuses,
 📢 For daily offers & VIP drops, join our channel 👇
 
 <b>Featured items:</b>
-• <b>MadCasino</b> — MadCasino — 777% Welcome Bonus up to £7,500"
+• <b>MadCasino</b> — 777% Welcome Bonus up to £7,500"
 • <b>Item Two</b> — short description here
 • <b>Item Three</b> — short description here
 • <b>Item Four</b> — short description here
