@@ -12,10 +12,11 @@ import os
 # You can use HTML tags: <b>bold</b>, <i>italic</i>, <a href="URL">link</a>
 WELCOME_TEXT = """<b>Welcome! 👋</b>
 
-This is a placeholder for your main intro text.
+You've just landed in the right place. We bring you the biggest welcome bonuses, exclusive offers, and trusted bookies — all in one spot. No fluff, no chasing, just the good deals.
+📢 For daily offers & VIP drops, join our channel 👇
 
 <b>Featured items:</b>
-• <b>Item One</b> — short description, e.g. "Up to 100% bonus"
+• <b>MadCasino</b> — MadCasino — 777% Welcome Bonus up to £7,500"
 • <b>Item Two</b> — short description here
 • <b>Item Three</b> — short description here
 • <b>Item Four</b> — short description here
@@ -37,7 +38,7 @@ WELCOME_IMAGE = "images/welcome.jpg"
 # To remove one, delete or comment out (#) its line.
 BUTTONS = [
     {"text": "📢 Join channel for more",   "url": "https://t.me/yourchannel"},
-    {"text": "🎯 Item One",                "url": "https://example.com/one"},
+    {"text": "🎯 MadCasino",                "url": "https://example.com/one"},
     {"text": "🎯 Item Two",                "url": "https://example.com/two"},
     {"text": "🎯 Item Three",              "url": "https://example.com/three"},
     # Add more lines here whenever you want — example:
