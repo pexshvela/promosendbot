@@ -1,8 +1,8 @@
 """
 Edit this file to change the bot's content.
 
-For sensitive/environment-specific values (admin IDs, bot token), the bot reads
-from environment variables — set those in Railway's Variables tab.
+For sensitive/environment-specific values (admin IDs, bot token, Supabase keys),
+the bot reads from environment variables — set those in Railway's Variables tab.
 """
 
 import os
@@ -35,7 +35,6 @@ WELCOME_IMAGE = "images/welcome.jpg"
 # ---------- Inline buttons ----------
 # To add a new button, copy a line and change the text + URL.
 # To remove one, delete or comment out (#) its line.
-# Buttons appear in the order listed here.
 BUTTONS = [
     {"text": "📢 Join channel for more",   "url": "https://t.me/yourchannel"},
     {"text": "🎯 Item One",                "url": "https://example.com/one"},
@@ -51,22 +50,19 @@ BUTTONS_PER_ROW = 1
 # ---------- Admin IDs (from environment variable) ----------
 # In Railway: set a variable named ADMIN_IDS with comma-separated IDs:
 #   ADMIN_IDS=123456789,987654321
-# Locally: add the same line to your .env file.
 # Find your ID by messaging @userinfobot on Telegram.
 def _parse_admin_ids() -> list[int]:
     raw = os.getenv("ADMIN_IDS", "").strip()
     if not raw:
         return []
-    out = []
-    for part in raw.split(","):
-        part = part.strip()
-        if part.isdigit():
-            out.append(int(part))
-    return out
+    return [int(p.strip()) for p in raw.split(",") if p.strip().isdigit()]
 
 ADMIN_IDS = _parse_admin_ids()
 
 # ---------- Broadcast settings ----------
-# Delay between sends during a broadcast, in seconds.
 BROADCAST_DELAY_MIN = float(os.getenv("BROADCAST_DELAY_MIN", "0.05"))
 BROADCAST_DELAY_MAX = float(os.getenv("BROADCAST_DELAY_MAX", "0.15"))
+
+# ---------- Supabase ----------
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")  # use the service_role key
