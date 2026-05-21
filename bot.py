@@ -37,6 +37,10 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 if not BOT_TOKEN:
     raise SystemExit("ERROR: BOT_TOKEN not set. Add it to .env (local) or Railway variables.")
 
+if not config.ADMIN_IDS:
+    print("WARNING: No ADMIN_IDS set. /broadcast and /users will be unusable.")
+    print("Set ADMIN_IDS=123456789 in .env (local) or Railway variables.")
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
