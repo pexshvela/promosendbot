@@ -17,10 +17,8 @@ You've just landed in the right place. We bring you the biggest welcome bonuses,
 📢 For daily offers & VIP drops, join our channel 👇
 
 <b>Featured items:</b>
-• <b>MadCasino</b> — 777% Welcome Bonus up to £7,500"
-• <b>Item Two</b> — short description here
-• <b>Item Three</b> — short description here
-• <b>Item Four</b> — short description here
+• <b>MadCasino</b> — 777% Welcome Bonus — up to £7,500 + 20% Casback"
+• <b>Gambiva</b> — 800% Welcome Bonus — up to €10,000 + 25% Cashback
 
 Tap a button below to learn more 👇
 """
@@ -38,10 +36,9 @@ WELCOME_IMAGE = "images/welcome.jpg"
 # To add a new button, copy a line and change the text + URL.
 # To remove one, delete or comment out (#) its line.
 BUTTONS = [
-    {"text": "📢 Join channel for more",   "url": "https://t.me/yourchannel"},
-    {"text": "🎯 MadCasino",                "url": "https://example.com/one"},
-    {"text": "🎯 Item Two",                "url": "https://example.com/two"},
-    {"text": "🎯 Item Three",              "url": "https://example.com/three"},
+    {"text": "📢 Join channel for more",   "url": "https://t.me/bestukcasinobonuses"},
+    {"text": "🎯 MadCasino",                "url": "https://go.afftrackio.com/visit/?bta=36238&nci=5354"},
+    {"text": "🎯 Gambiva",                "url": "https://go.afftrackio.com/visit/?bta=36238&nci=5363"},
     # Add more lines here whenever you want — example:
     # {"text": "🎯 Item Four",             "url": "https://example.com/four"},
 ]
