@@ -30,7 +30,7 @@ FOOTER_TEXT = ""
 # ---------- Welcome image ----------
 # Put your image file in the images/ folder and write the filename here.
 # Set to None (without quotes) if you want text-only.
-WELCOME_IMAGE = "images/welcome.jpg"
+WELCOME_IMAGE = "imagessendbot/welcome.jpg"
 
 # ---------- Inline buttons ----------
 # To add a new button, copy a line and change the text + URL.
